@@ -1,5 +1,6 @@
 #include <Eigen/Core>
 #include <igl/readOBJ.h>
+#include <igl/writeOBJ.h>
 #include <cassert>
 #include <limits>
 #include <cmath>
@@ -89,15 +90,22 @@ bool loadProblem(std::string loadingPath = "")
     posList.resize(numFrames);
     faceList.resize(numFrames);
 
-    auto loadPerFrame = [&](const tbb::blocked_range<uint32_t>& range)
+    for (uint32_t i = 0; i < numFrames; ++i)
+    {
+        std::cout << "load frame: " << i << std::endl;
+        igl::readOBJ(folder + meshNamePrefix + std::to_string(i + startId) + ".obj", posList[i], faceList[i]);
+    }
+
+   /* auto loadPerFrame = [&](const tbb::blocked_range<uint32_t>& range)
     {
         for (uint32_t i = range.begin(); i < range.end(); ++i)
         {
+            std::cout << "load frame: " << i << std::endl;
             igl::readOBJ(folder + meshNamePrefix + std::to_string(i + startId) + ".obj", posList[i], faceList[i]);
         }
     };
     tbb::blocked_range<uint32_t> rangex(0u, (uint32_t)numFrames, 1);
-    tbb::parallel_for(rangex, loadPerFrame);
+    tbb::parallel_for(rangex, loadPerFrame);*/
     std::cout << "load mesh finished!" << std::endl;
     inputPath = loadingPath;
 
@@ -161,6 +169,21 @@ void callback() {
             //polyscope::options::screenshotExtension = ".jpg";
             std::string name = preFolder + subFolder + "/output_" + std::to_string(i) + ".png";
             polyscope::screenshot(name);
+        }
+    }
+
+    if (ImGui::Button("output meshes", ImVec2(-1, 0)))
+    {
+        int id = inputPath.rfind("/");
+        std::string preFolder = inputPath.substr(0, id);
+        std::cout << "save folder: " << preFolder << std::endl;
+        std::string subFolder = "/meshSequence/";
+        mkdir(preFolder + subFolder);
+
+        for (int i = 0; i < numFrames; i++)
+        {
+            std::string name = preFolder + subFolder + "/mesh_" + std::to_string(i) + ".obj";
+            igl::writeOBJ(name, posList[i], faceList[i]);
         }
     }
 
